@@ -1,0 +1,106 @@
+Lab1
+
+The goal of this lab is to develop and experiment with thread
+pools. A thread pool is a mechanism whereby a fixed number of threads
+consume (execute) a queue of tasks. We'll work with the interface
+described in thread_pool.hpp
+
+There is one salient feature about the thread pools we will create:
+they should be able to be cleanly stopped while task may be pending or
+being added. This will give us ample opportunity to work coordination
+problems.
+
+To make our lives simpler, it is convenient to manipulate a tangible
+task object rather than to use pointer to functions. Moreover, we
+could also wrap pthread code so to take those tasks. We saw in the
+previous lab how casting can become a potential source of
+problems. Both these mechanisms are provided for you, as described
+next:
+
++ thread.hpp has a factory called makeThread. It takes a task and
+returns a pthread_id. Please, look up the sources and figure out how
+it works.
+
++ A task is a special instance of a Callback. A Callback is simply a
+wrapper to a class's method. The Callback is type-safe, though, in that
+you can determine what's the signature of the method you want to wrap.
+
+  Callback<void> wraps a method (in some class) that takes no
+  parameter and has no return
+
+  Callback<void, int> wraps a method (again) that takes an integer and
+  has no return
+
+  Callback<bool, int> wraps a method (ditto) that returns a bool and
+  take an integer
+
+  We do have factory methods to create a Callback, given a class
+  instance and a pointer to the method we want to wrap. You should
+  figure out how Callbacks work by looking at the callback_test.cpp
+  code.
+
+  One last detail about wrapping methods. It takes into account what
+  should happen with the callback object itself once it is
+  executed. It can self delete or it can stick around, in which case
+  you're responsible for deleting it.
+
+
+Your job for the test week (deadline 02/09)
+==========================
+
+You should develop in the following test:
+
++ thread_test.cpp should show the thread factory works
+
++ thread_pool_test.cpp ditto for the thread pool you'll build. You can
+point the test toward ThreadPoolNormal. (Please, don't go crazy on
+templates. For now it is fine if the test code addresses one thread
+pool type only.)
+
++ thread_pool_benchmark.cpp is a comparison between a "fast" and a
+"normal" thread pool. You should assume the fast one will be
+implemented in the thread_pool_fast.cpp files. To make things simple,
+you should consider the normal one is on thread_pool_normal.cpp
+
+
+Your job for code week (deadline 02/16)
+======================
+
+Consider the following. Executing a thread means inserting it in a
+queue, by the caller, and dequeing that task, by the first available
+worker in the thread pool. If there are no workers available at an
+enqueue time, this is handy; the caller doesn't have to wait. But what
+if there were workers idle then? Couldn't the callee hand-off the task
+to a worker directly?
+
+You should develop the following files
+
++ thread_pool_fast.cpp, where the fast thread pool should go
++ thread_pool_normal.cpp, where the non-optimized one should go
++ submit carefully analyzed performance numbers in thread_pool.bench
+
+Your benchmark should create scenarios where workers are likely to be
+available and scenarios where workers are unlikely so. That usually
+has to deal with speed of addTask()-ing vs. speed it takes to actually
+execute the task.
+
+Note that There is little point in having more workers than cores. If
+a worker would be descheduled, we might as well enqueue a task.
+
+
+A heads-up comment
+==================
+
+Segmentation faults are highly likely in this lab. So roll your sleeves.
+
+Most, if not all, segmentations faults in these scenarios have to do
+with longevity of object instances. We're passing callbacks
+around. Care should be taken that, when a callback gets to execute,
+the object it references still exists.
+
+You'll need to think upfront pretty accurately how the pool teardown
+happens. Having a close grip on object longevity is vital here.
+
+Shared_ptr's is not fair game -- for us right now. Basically, because
+they allow one to be very sloppy with longevity. Speaking of sloppy,
+leaking memory is not cool either.

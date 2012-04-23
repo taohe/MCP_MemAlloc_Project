@@ -1,0 +1,48 @@
+Lab 4
+
+Imagine a busy server responding to HTTP (or other protocol)
+requests. How busy is the server "now", say, in the second that
+finished with our request? The module we will develop this week keeps
+track of that "instantaneous" number of requests. Its interface is
+simple: record that a request finished "now," or get the number of
+requests that finished in the second roughly finishing "now."
+
+A wrinkle: the module must collect stats with no interference. That
+is, the internal state of this class must keep information without any
+overhead. No locks, no atomics, no "private" threads. The trick here
+is that we can know (because the interface tells us so) which thread
+handled each request and how many threads there are going to be
+upfront.
+
+We should learn how to trade accuracy for speed.
+
+Also in this lab, we're going to incorporate network and http
+machinery and see our server running. We'll be capable to start
+servicing https requests.
+
+
+week 1 deadline 4/05
+======
+
+You job this week is to develop the stats module in the files below
+(skeleton provided):
+request_stat.hpp
+request_stat.cpp
+request_stat_test.cpp
+
+If you wish to see your class working, bring 'server' up and fire a
+round of http requests at it (e.g., by using the 'httperf'
+tool). During the request storm, open a browser page to your server
+and ask for the /stats document (e.g. http://localhost:15001/stats)
+
+
+week 2 deadline 4/12
+======
+
+Your job this week is to explain where the time spent by requests in
+the server is going and why is the server not taking more requests per
+second, if we try to up it.
+
+You'll deliver the "time break down" and the "bottleneck" analysis on
+the following file: server_analysis.txt. As with code, please be
+consice and to-the-point.

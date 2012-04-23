@@ -1,0 +1,9 @@
+myTCMalloc implementainon
+(1) page_map.hpp -- a class which maps from 64-bit page#(4K page, 2^52 of them) to a pointer(void*) that
+    contains information about that page.
+    ----- Unfinished
+    ----- 4/18/2012 14:19 PM
+
+(2) mem-test classes are in files: "memtest_binsmgr.*"
+    test cases and benchmarks is in "memalloc_benchmark.cpp"
+    ----- 4/23/2012 15:48 PM

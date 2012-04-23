@@ -1,0 +1,190 @@
+Lab 2
+
+Suppose we're in a HTTP server and a given document is requested quite
+frequently. We'd like to avoid reading it from disk at every time. If
+we put such document in a cache area, and the requests are indeed
+frequent, chances are that the cache can serve the request in a
+subsequent time. This lab builds such a cache.
+
+The interface for the cache is described in file_cache.hpp. To "pin"
+and "unpin" are common terms referring to, respectively, the activity
+of making sure the cache contains a given file, and notifying the
+cache that we do not care about a file anymore. When we pin a file for
+the first time to the cache, we say that was a "miss". When we pin a
+file that was already in the cache (either pinned or unpinned) we call
+that a hit. When we completely unpin a file, we leave it hanging in
+the cache so that a later request can be a hit. Between a pin and its
+subsequent unpin, the cache garantees that the file will be
+available. In other words, a pinned file never gets evicted from the
+cache, only unpinned ones.
+
+Of course, we can't leave all unpinned files in the cache forever. The
+cache must strive to not use space over the limit it was given. So if
+a pin request gets over that, the cache needs to release previously
+unpinned files.
+
+Most importantly, We want our pin and unpin operations to be run
+concurrently. So our job is to protect the internal state of the cache
+accordingly. You'll find that reader-writer locks are useful
+here. Also, incrementing counters with atomic instructions can be
+handy.
+
+Everything else you should need is described in this lab's files and
+below.
+
+
+Your job for the test week (deadline 03/01)
+==========================
+
++ Develop tests in file_cache_test.cpp
+
+You'll notice that FileChache contains several counter accessors. Your
+tests should create situations that can be verified by using the
+counters. There are supposed to be both sequential and concurrent test
+cases.
+
+
+Your job for the code week (deadline 02/08)
+==========================
+
++ Complete file_cache.{hpp,cpp}
+
+We are not doing any benchmark this week.
+
+
+Some helpful code snippets follow
+=================================
+
++ To get a file's size:
+
+ int fd = ::open(file_name.c_str(), O_RDONLY);
+ if (fd < 0) {
+   LOG(LogMessage::WARNING) << "could not open " << file_name
+                            << ": " << strerror(errno);
+   ... handle the error ...
+ }
+
+ struct stat stat_buf;
+ fstat(fd, &stat_buf);
+ ... file size is in stat_buf.st_size ...
+
+
+* To increment an integer atomically:
+
+ int pin_total_ = 0;
+ __sync_fetch_and_add(&pin_total_, 1);
+
+ ... pin_total_ now has 1 ...
+
+
+---
+
++ To load a Buffer with a file's contents (the file is opened already and
+its descriptor is 'fd')
+
+ Buffer* new_buf = new Buffer;
+ size_t to_read = stat_buf.st_size;
+ while (to_read > 0) {
+   new_buf->reserve(new_buf->blockSize());
+
+   int bytes_read = read(fd, new_buf->writePtr(), new_buf->writeSize());
+
+   if (bytes_read < 0 ) {
+
+     LOG(LogMessage::ERROR) << "cant read file " << file_name
+                            << ": " << strerror(errno);
+     close(fd);
+     delete new_buf;
+
+     ... handle error here ...
+   }
+
+   to_read -= bytes_read;
+ }
+
+ if (to_read != 0) {
+   LOG(LogMessage::WARNING) << "file change while reading " << file_name;
+ }
+ new_buf->advance(stat_buf.st_size - to_read);
+ ... file contents is in 'new_buf' now...
+
+---
+
++ To define a map from a file name to a struct (containing that file):
+
+ struct Node {
+   const string file_name;
+   Buffer*      buf;             // owned here
+   ... any other state you want to keep for a node ...
+ };
+
+ // A map from a file_name to its node. Because we want to save
+ // space, we use the file_name inside the Node as the key (as a
+ // string*) rather than to duplicate that (as a string).
+ struct HashStrPtr {
+   size_t operator()(const string* a) const {
+     hash<string> hasher;
+     return hasher(*a);
+   }
+ };
+ struct EqStrPtr {
+   bool operator()(const string* a, const string* b) const {
+     return *a == *b;
+   }
+ };
+ typedef unordered_map<const string*, Node*, HashStrPtr, EqStrPtr> CacheMap;
+
+
+---
+
++ Insert a node in the map
+
+ Node* new_node = new Node(file_name, new_buf);
+ ... fill in the other attributes of Node here ...
+
+ CacheHandle h = 0;
+ std::pair<CacheMap::iterator, pool> it;
+ it = cache_map_.insert(make_pair(&new_node->file_name, new_node));
+
+ if (it.second) {
+
+   ... say! Insertion went well...
+
+   h = reinterpret_cast<CacheHandle>(&new_node->file_name);
+
+ } else {
+
+   ... hum, there was already a node like that in the map...
+
+ }
+
+
+---
+
++ To lookup a file_name in the map
+
+ CacheHandle h = 0;
+
+ CacheMap::iterator it = cache_map_.find(&file_name);
+ if (it != cache_map_.end()) {
+
+   ... found it ...
+
+   h = it->first;
+   Node* node = it->second;
+   *buf = node->buf;
+
+ } else {
+
+   ... nope, not in the map
+
+ }
+
+
+---
+
++ To erase a file_name/node from the map
+
+ cache_map_.erase(&file_name);
+
+LocalWords:  CacheHandle lookup buf

@@ -1,0 +1,33 @@
+Lab 3
+
+A "spinning" lock is one that busy-waits in user space until its turn
+to run. The mutex we've been using is a "blocking" lock, as the
+literature calls it, as opposed to spinning, in that it uses the OS to
+sleep instead of consuming CPU.
+
+The interface to these locks is identical. It is the internal behavior
+that changes. So when to use one versus the other? In this lab, we
+want to figure that out through experimentation.
+
+
+Your job for the first week (deadline 3/22)
+===========================
+
+A version of a backoff-spinning lock is provided in
+spinlock.hpp/spinlock_test.cpp.  You should write a lock_benchmark.cpp
+that shows in which conditions spinning is better than blocking. 
+
+There is no a priori defined format for the benchmark. The numbers the
+benchmark produces should be self-explanatory and easy to analyze.
+
+
+Your job for the second week (deadline 3/29)
+============================
+
+Implement a queue-based spinning lock. 
+
+Hopefully, the first week's benchmark can be used here again to contrast
+your queue-based lock with the backoff-spinning lock.
+
+(A bonus, *iff* time allows: add a fairness test to spinlock_test.cpp and
+show that your queue-based lock passes it.)

@@ -1,0 +1,60 @@
+MCP'12 - Warm-up lab
+
+Your job is to implement data structures #1 and #2, below. Their
+interface and semantics are described in the correspondent header file.
+
+1) Circular buffer
+single threaded
+CircularBuffer(int slots)
+void write(int value)
+int read()
+files: circular_buffer{.hpp, .cpp, _test.cpp}
+
+2) Thread safe list-based set
+Lock entire list, fine
+bool insert(int value)
+bool remove(int value)
+bool search(int value)
+files: list_set{.hpp, .cpp, _test.cpp}
+
+Please, see demo_test.cpp for an example _test.cpp case.
+
+===
+
+Grade:
+------
+
++ Lab does what's asked for
++ Timing (there's no late delivery)
+commit deadlines: first Thursday, _tests.cpp's, following Thursday, all remaining files
++ Correct (code is easy to reason and tests are comprehensive)
++ Simplicity (values the time of the code reader)
++ CODING STYLE (figure out by looking at other files)
+
+
+Coding Style Rationale:
+-----------------------
+
+If the assignment was written English, wouldn't you divide it
+paragraphs? Wouldn't each paragraph conform to a certain formatting
+standard?  Wouldn't each paragraph be self-contained and clear?  ...
+
+Coding style is the same. It frees you to think of code only, once you
+get used to the style.  If you look at the labs code, it'll be easy to
+grasp the style.  For a complete reference, see
+http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml
+
+Code "pyrotechnics" (resorting to language esoterica that's not
+necessary) is very much frowned upon! Simplicity is the name of the
+game.
+
+
+Additional comments:
+--------------------
+
++ No STL for now
++ No templates, use int's
++ Use locks from lock.hpp
++ Need threads in #2 tests. Use straight pthread only (will add support later)
++ Small but meaningful commits.
+

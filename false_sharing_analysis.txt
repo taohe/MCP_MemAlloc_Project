@@ -1,0 +1,113 @@
++ Experiment
+============
+
+We're firing N threads, each doing a repeated multiplication over a
+given integer variable. In one version of the benchmark, the N
+integers occupy a contiguous space. In the other version, there is a
+gap between the integers. The gap is so that each integer falls into
+its own cache line. This, of course, wastes memory. (Source
+false_sharing_benchmark.cpp)
+
+For N=24 and 10M operations each, the timing is as follows in a Dual
+Socket Xeon 5650 2.66GHZ
+
+contiguous  0.598249 secs
+aligned     0.071045 secs
+
+Can the layout of data alone account for this? Yes, because of false
+sharing -- cache lines ricocheting among cores.
+
+Identifying a false sharing situation is more about trained eyes than
+anything else. But, for the experiment's sake, let's look at some very
+low level performance measurements and see how these two
+implementations affect cache behavior.
+
+
++ Hardware Event Counters
+=========================
+
+Where does the roughly 0.5 second difference go to?
+
+Let's take a look at how many 'stores' our code does. Recall we're
+running 24 threads, and each loop iteration changes two memory
+positions, 'i' and 'val'. We should be seeing a 48x factor over the
+number of operations.
+
+Luckily, we can ask the hardware to count these stores with very
+little overhead. (Linux 'perf' tool is a command-line interface to
+these counters. Use recent kernels to get this tool.)
+
+On Nehalem Xeons, we can count 'stores' by using the
+MEM_INST_RETIRED.STORES counter. (A good counter in 'perf' for this is
+L1-dcache-stores.) Just to make sure that the stores in the experiment
+are dominated by our Adder::add() loop, here's the result of that
+counter for 10,000, 100,000, 1,000,000 and 10,000,000 operations.
+
+    loops        retired
+                  stores
+    10,000      1,001,123
+   100,000      5,433,423
+ 1,000,000     48,966,609
+10,000,000    483,231,188
+
+The numbers are in the same ball park whether we align to a cache
+line or not. We did not expect the number of stores to change, just
+the layout.
+
+But how many of these were L1 misses? And how about loads? What I'd
+like us to get here is to realize that the layout of data impacts
+cache behavior. The more successful the caching is, the faster our
+code will get.
+
+Here is one more complete picture with load/stores. (Intel recommends
+different counters to detect false sharing, namely,
+MEM_UNCORE_RETIRED.OTHER_CORE_L2_HITM. It would require us to get a
+bit more into how L3 works. For this exercise, lest's stick with
+simpler counters.)
+
++++ Contiguous:
+$ perf stat -e L1-dcache-loads,L1-dcache-load-misses,L1-dcache-stores,L1-dcache-store-misses,LLC-stores,LLC-store-misses,cpu-cycles,stalled-cycles-frontend ./build/debug/false_sharing_benchmark
+96
+24 0.525414
+
+ Performance counter stats for './build/debug/false_sharing_benchmark':
+
+     1,188,682,115 L1-dcache-loads
+        24,335,438 L1-dcache-load-misses  <======
+       480,603,070 L1-dcache-stores
+        12,176,625 L1-dcache-store-misses <======
+         6,016,787 LLC-stores
+           822,671 LLC-store-misses
+    28,607,094,422 cpu-cycles
+    27,785,863,983 stalled-cycles-frontend <======
+
+       0.528755118 seconds time elapsed
+
++++ Aligned:
+$ perf stat -e L1-dcache-loads,L1-dcache-load-misses,L1-dcache-stores,L1-dcache-store-misses,LLC-stores,LLC-store-misses,cpu-cycles,stalled-cycles-frontend ./build/debug/false_sharing_benchmark
+1536
+24 0.06282
+
+ Performance counter stats for './build/debug/false_sharing_benchmark':
+
+     1,140,211,850 L1-dcache-loads
+           195,362 L1-dcache-load-misses  <======
+       441,824,442 L1-dcache-stores
+            37,889 L1-dcache-store-misses <======
+             6,838 LLC-stores
+               806 LLC-store-misses
+     2,701,867,840 cpu-cycles
+     1,868,916,692 stalled-cycles-frontend <=====
+
+       0.065880122 seconds time elapsed
+
+Noticed how many more CPU cycles were involved? Can you see that these
+cycles were stalls? Now, let's argue that the stalls came from the
+cache misses.
+
+Very roughly, 36M load/stores (24M + 12M) were misses in the
+contiguous version. If we suppose that the 0.5 second were caused by
+the misses, we get that each miss costs roughly 13 nanoseconds. In
+this 2.4GHZ machine that's in the ball park of the the -- again
+roughly -- 30 cycles that a L3 hit, as opposed to an L1 hit, costs.
+
