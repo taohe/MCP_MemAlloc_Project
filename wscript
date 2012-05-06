@@ -46,7 +46,7 @@ def configure(conf):
     env.set_variant('debug')
     conf.set_env_name('debug', env)
     conf.setenv('debug')
-    conf.env.CXXFLAGS = ['-g', '-Wall', '-pedantic'
+    conf.env.CXXFLAGS = ['-g', '-Wall', '--pedantic',
                          '-fno-omit-frame-pointer']
     #conf.env.LINKFLAGS = ['-export-dynamic']
 
@@ -90,6 +90,8 @@ def build(bld):
                                    thread_pool_normal.cpp
                                    thread_registry.cpp
                                    signal_handler.cpp
+                                   op_generator.cpp
+                                   lock_free_hash_table.cpp
                                """,
                       includes = '.. .',
                       uselib = 'PTHREAD',
@@ -150,10 +152,30 @@ def build(bld):
                       name = 'memtest'
                     )
 
+#    bld.new_task_gen( features = 'cxx cshlib',
+#                      source = """ mytrad_malloc.cpp
+#                               """,
+#                      includes = '.. .',
+#                      uselib = '.. .',
+#                      uselib_local = '',
+#                      target = 'my_traditional_malloc',
+#                      name = 'my_traditional_malloc'
+#                    )
+
 
     #****************************************
     # tests / benchmarks
     #
+
+    #*****new test for shared-library my_traditional_malloc
+    #bld.new_task_gen( features = 'cxx cprogram',
+    #                  source = 'test1.cpp',
+    #                  includes = '.. .',
+    #                  defines = ['LD_LIBRARY_PATH=.'],
+    #                  lib          = ['MyMalloc'],
+    #                  target = 'test1',
+    #                  unit_test = 1
+    #                )
 
     #*****new benchmark for scalable-memory-allocator test
     bld.new_task_gen( features = 'cxx cprogram',
@@ -187,6 +209,24 @@ def build(bld):
                                      """,
                       target = 'memalloc_benchmark_glibc',
                       unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'lock_free_list_test.cpp',                                                                                                
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'lock_free_list_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'lock_free_hash_table_test.cpp',
+                      includes = '.. .',
+                      uselib = '', 
+                      uselib_local = 'concurrency',
+                      target = 'lock_free_hash_table_test',
+                      unit_test = 1 
                     )
 
     bld.new_task_gen( features = 'cxx cprogram',

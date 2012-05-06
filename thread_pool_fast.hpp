@@ -30,6 +30,7 @@ public:
   // Returns the worker ID the call is being issued from. The call
   // must be issued from a worker thread.
   static int ME();
+  static void setMEForTest(int i);
 
 private:
   class Worker;

@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "callback.hpp"
 #include "lock.hpp"
 #include "test_unit.hpp"
@@ -6,6 +8,7 @@
 
 namespace {
 
+using std::cout;
 using base::Callback;
 using base::ConditionVar;
 using base::makeCallableOnce;
@@ -25,6 +28,10 @@ public:
   // Fills in 'p' with the address of the integer for this thread and
   // writes 'val' to it. Blocks until stop() is called.
   void init(int** p, int val) {
+    if (local_.getVal() == 0) {
+      int index = local_.getAddr() - local_.getBaseAddr();
+      cout << "TLS init to 0!\tIndex: " << index << "\n";
+    }
     *p = local_.getAddr();
     local_.setVal(val);
 
@@ -73,7 +80,7 @@ private:
 
 TEST(Basics, OneIntPerThread) {
   Tester tester;
-  const int NUM_THREADS = 2;
+  const int NUM_THREADS = 12;
   int* ints[NUM_THREADS] = {NULL, NULL};
   pthread_t tids[NUM_THREADS];
 

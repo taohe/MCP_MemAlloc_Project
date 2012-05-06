@@ -178,4 +178,8 @@ int ThreadPoolFast::ME() {
   return worker_num_.getVal();
 }
 
+void ThreadPoolFast::setMEForTest(int i) {
+  worker_num_.setVal(i);
+}
+
 } // namespace base

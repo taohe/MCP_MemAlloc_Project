@@ -29,7 +29,7 @@ class ThreadLocal {
 public:
   // Sets up a key by which this local storage is known and sets
   // 'destroyLocalKey' to be run at each thread exit.
-  ThreadLocal();
+  explicit ThreadLocal();
   ~ThreadLocal() {}
 
   // Releases resources used by a thread that had local storage. Called
@@ -68,7 +68,7 @@ private:
 
 template<typename T>
 ThreadLocal<T>::ThreadLocal() : curavail_slot_(0) {
-  memset(storageArr, 0x0, MAXNUMOFTHREADS * sizeof(T));
+  memset(storageArr, -1, MAXNUMOFTHREADS * sizeof(T));
   pthread_key_create(&local_key_, destroyLocalKey);
 }
 
