@@ -6,4 +6,6 @@ myTCMalloc implementainon
 
 (2) mem-test classes are in files: "memtest_binsmgr.*"
     test cases and benchmarks is in "memalloc_benchmark.cpp"
+    To run test, eg:
+    ./build/debug/memalloc_benchmark_llalloc   #OF_Threads
     ----- 4/23/2012 15:48 PM
