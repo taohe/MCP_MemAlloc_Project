@@ -29,8 +29,8 @@ void allocationThread(void*) {
 
 extern "C" void atExitHandlerInC();
 
-int main() {
-  int numberOfThreads = 2;
+int main(int argc, char* argv[]) {
+  int numberOfThreads = 12;
   void* psingle = malloc(20);
   TicksClock::Ticks avgticks = 0;
 
